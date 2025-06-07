@@ -1,4 +1,5 @@
 import os
+import functools # Adicione esta linha
 from flask import Flask, render_template, request, redirect, url_for, flash
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -60,6 +61,7 @@ def load_user(user_id):
 
 # Decorador para verificar se o usuário é admin
 def admin_required(f):
+    @functools.wraps(f) # Adicione esta linha!
     @login_required
     def decorated_function(*args, **kwargs):
         if not current_user.is_admin:
