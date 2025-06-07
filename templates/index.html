@@ -3,36 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Tickets de Manutenção da Ouro Preto</title>
+    <title>Sistema de Manutenção</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <div class="header">
+        <a href="{{ url_for('index') }}" class="logo">Manutenção Mineradora</a>
+        <nav>
+            {% if current_user.is_authenticated %}
+                <span>Olá, {{ current_user.user_data.username }}!</span>
+                <a href="{{ url_for('abrir_chamado') }}">Abrir Chamado</a>
+                <a href="{{ url_for('listar_chamados') }}">Ver Chamados</a>
+                {% if current_user.is_admin %}
+                    {# Link para gerenciar usuários ou equipamentos, apenas para admin #}
+                    <a href="#">Gerenciar (Admin)</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Sair</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Entrar</a>
+            {% endif %}
+        </nav>
+    </div>
     <div class="container">
-        <h1>Bem-vindo ao Sistema de Tickets de manutenção da Ouro Preto</h1>
+        <h1>Bem-vindo ao Sistema de Manutenção da Mineradora!</h1>
         <p>Esta é a página inicial.</p>
-        <p><a href="{{ url_for('abrir_chamado') }}" class="button">Abrir Novo Chamado</a></p>
-        <p><a href="{{ url_for('listar_chamados') }}" class="button secondary-button">Ver Chamados Ativos</a></p>
+
+        {# Exibe mensagens flash #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
     </div>
     <style>
-        /* Adicionar um estilo para o botão/link na página inicial */
-        .button {
-            display: inline-block;
-            background-color: #28a745;
+        /* CSS para o cabeçalho, pode ser movido para style.css */
+        .header {
+            background-color: #333;
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header .logo {
+            color: white;
             text-decoration: none;
-            margin: 10px; /* Margem para separar os botões */
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .header nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 20px;
+            padding: 5px 10px;
+            border-radius: 4px;
             transition: background-color 0.3s ease;
         }
-        .button:hover {
-            background-color: #218838;
+        .header nav a:hover {
+            background-color: #555;
         }
-        .secondary-button {
-            background-color: #007bff; /* Cor diferente para o segundo botão */
+        .header nav span {
+            margin-right: 20px;
         }
-        .secondary-button:hover {
-            background-color: #0056b3;
+        
+        /* Mensagens Flash (igual ao login.html, mover para style.css) */
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        .flash-messages li {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .flash-messages li.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .flash-messages li.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .flash-messages li.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        /* Remova os botões antigos da index.html se você os tinha lá */
+        .container p .button, .container p .secondary-button {
+            display: none; /* Ou remova a linha que os cria se preferir */
         }
     </style>
 </body>

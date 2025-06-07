@@ -1,18 +1,18 @@
-# mongodb+srv://webtkt:Alicia29012019@cluster0.zip50.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-import os # Adicione esta importação no topo
-from flask import Flask, render_template, request, redirect, url_for
+
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from datetime import datetime
-from bson.objectid import ObjectId # Importar para lidar com IDs do MongoDB
+from bson.objectid import ObjectId
+from werkzeug.security import generate_password_hash, check_password_hash # Para hashing de senhas
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user # Flask-Login
 
 # Inicializa o aplicativo Flask
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'ouropretomineracaopomerodesc' # Mude isso para uma chave real e segura!
 
-# --- Configuração do MongoDB ---
-# COLOQUE SUA STRING DE CONEXÃO AQUI
-# Lembre-se de substituir <username> e <password>
-#uri = "mongodb+srv://webtkt:A29012019@cluster0.zip50.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+# --- Configuração do MongoDB (Mantenha o que você já tem) ---
 uri = os.environ.get("MONGODB_URI") # Busca a URI da variável de ambiente
 
 if not uri:
@@ -21,46 +21,69 @@ if not uri:
     # uri = "mongodb://localhost:27017/manutencao_db_local"
     # Ou apenas encerrar o aplicativo se não encontrar a URI
     exit(1) # Sai se a URI não estiver configurada
-
-# Cria um novo cliente e conecta ao servidor
 client = MongoClient(uri, server_api=ServerApi('1'))
 
-# Tenta enviar um ping para confirmar uma conexão bem-sucedida
 try:
     client.admin.command('ping')
     print("Pinged your deployment. You successfully connected to MongoDB!")
 except Exception as e:
     print(e)
 
-# Define o banco de dados e a coleção que vamos usar
-# O nome do banco de dados (ex: 'manutencao_db') e da coleção (ex: 'chamados')
-# serão criados automaticamente se não existirem quando você inserir dados.
-db = client.manutencao_db # Nome do seu banco de dados
-chamados_collection = db.chamados # Nome da sua coleção (onde os chamados serão armazenados)
+db = client.manutencao_db
+chamados_collection = db.chamados
+users_collection = db.users # Nova coleção para usuários
 # --- Fim da Configuração do MongoDB ---
 
-# Define a rota principal (home page)
+# --- Configuração do Flask-Login ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login' # Define a rota para onde o usuário será redirecionado se não estiver logado
+
+# Classe User para Flask-Login
+class User(UserMixin):
+    def __init__(self, user_data):
+        self.user_data = user_data # Dicionário com os dados do usuário do MongoDB
+        self.id = str(user_data['_id']) # Flask-Login precisa de um 'id' em string
+
+    @property
+    def is_admin(self):
+        # Propriedade para verificar se o usuário é administrador
+        return self.user_data.get('role') == 'admin'
+
+@login_manager.user_loader
+def load_user(user_id):
+    # Esta função é chamada pelo Flask-Login para recarregar o usuário
+    # a partir do ID armazenado na sessão.
+    user_data = users_collection.find_one({"_id": ObjectId(user_id)})
+    if user_data:
+        return User(user_data)
+    return None
+
+# --- Fim da Configuração do Flask-Login ---
+
+
+# Rota principal (Home Page)
 @app.route('/')
 def index():
-    # Por enquanto, apenas renderiza o template.
-    # Futuramente, podemos passar dados do MongoDB para a página inicial.
     return render_template('index.html')
 
-# --- Rota para Abrir Novo Chamado ---
+# Rota para Abrir Novo Chamado
 @app.route('/abrir_chamado', methods=['GET', 'POST'])
+@login_required # Protege esta rota: exige login
 def abrir_chamado():
     if request.method == 'POST':
-        # Se o formulário foi submetido (método POST)
         titulo = request.form['titulo']
         descricao = request.form['descricao']
         maquina = request.form['maquina']
         localizacao = request.form['localizacao']
         prioridade = request.form['prioridade']
         equipe_responsavel = request.form['equipe_responsavel']
+        # O solicitante e contato agora podem vir do usuário logado se for o caso,
+        # ou ainda do formulário, dependendo da sua regra de negócio.
+        # Por enquanto, vamos manter do formulário.
         solicitante = request.form['solicitante']
         contato_solicitante = request.form['contato_solicitante']
 
-        # Criar o documento do chamado
         novo_chamado = {
             "titulo": titulo,
             "descricao": descricao,
@@ -68,76 +91,66 @@ def abrir_chamado():
             "localizacao": localizacao,
             "prioridade": prioridade,
             "equipe_responsavel": equipe_responsavel,
-            "data_abertura": datetime.now(), # Data e hora atuais
-            "status": "Aberto", # Status inicial
-            "historico_status": [{"status": "Aberto", "data": datetime.now(), "por": solicitante}],
-            "comentarios": [{"texto": descricao, "data": datetime.now(), "por": solicitante}], # Comentário inicial é a própria descrição
+            "data_abertura": datetime.now(),
+            "status": "Aberto",
+            "historico_status": [{"status": "Aberto", "data": datetime.now(), "por": current_user.user_data.get('username', solicitante)}], # Usa o nome do usuário logado
+            "comentarios": [{"texto": descricao, "data": datetime.now(), "por": current_user.user_data.get('username', solicitante)}],
             "solicitante": solicitante,
             "contato_solicitante": contato_solicitante
         }
 
-        # Inserir o documento na coleção de chamados
         chamados_collection.insert_one(novo_chamado)
-
-        # Redirecionar para a página principal ou uma página de sucesso
-        return redirect(url_for('index')) # Redireciona para a home após abrir o chamado
-
-    # Se a requisição for GET, apenas exibe o formulário
+        flash('Chamado aberto com sucesso!', 'success') # Mensagem de sucesso
+        return redirect(url_for('listar_chamados')) # Redireciona para a lista
     return render_template('abrir_chamado.html')
 
-# --- Nova Rota para Listar Chamados ---
+# Rota para Listar Chamados
 @app.route('/chamados')
+@login_required # Protege esta rota: exige login
 def listar_chamados():
-    # Busca todos os chamados na coleção, ordenando pelos mais recentes (data_abertura decrescente)
-    # .find({}) significa "encontre todos os documentos"
-    # .sort("campo", -1) ordena decrescente, .sort("campo", 1) ordena crescente
     chamados = list(chamados_collection.find({}).sort("data_abertura", -1))
-
-    # Passa a lista de chamados para o template
     return render_template('lista_chamados.html', chamados=chamados)
 
-# --- Nova Rota para Detalhes do Chamado ---
+# Rota para Detalhes do Chamado
 @app.route('/chamado/<chamado_id>')
+@login_required # Protege esta rota: exige login
 def detalhes_chamado(chamado_id):
     try:
-        # Busca o chamado pelo ID. Usamos ObjectId para converter a string do ID
-        # para o formato que o MongoDB espera.
         chamado = chamados_collection.find_one({"_id": ObjectId(chamado_id)})
         if chamado:
             return render_template('detalhes_chamado.html', chamado=chamado)
         else:
-            return "Chamado não encontrado", 404 # Retorna erro 404 se não achar
+            flash("Chamado não encontrado.", 'error')
+            return redirect(url_for('listar_chamados'))
     except Exception as e:
-        print(f"Erro ao buscar chamado: {e}")
-        return "Erro ao buscar chamado", 500
+        flash(f"Erro ao buscar chamado: {e}", 'error')
+        return redirect(url_for('listar_chamados'))
 
-# --- Nova Rota para Atualizar Status e Comentários ---
+# Rota para Atualizar Status e Comentários
 @app.route('/atualizar_chamado/<chamado_id>', methods=['POST'])
+@login_required # Protege esta rota: exige login
 def atualizar_chamado(chamado_id):
     if request.method == 'POST':
         novo_status = request.form.get('novo_status')
         novo_comentario_texto = request.form.get('novo_comentario')
-        quem_atualizou = request.form.get('quem_atualizou', 'Usuário Desconhecido') # Adiciona campo para quem atualizou
+        quem_atualizou = current_user.user_data.get('username', 'Usuário Desconhecido') # Agora pegamos o nome do usuário logado
 
         try:
-            # Busca o chamado para garantir que existe
             chamado_existente = chamados_collection.find_one({"_id": ObjectId(chamado_id)})
 
             if not chamado_existente:
-                return "Chamado não encontrado", 404
+                flash("Chamado não encontrado.", 'error')
+                return redirect(url_for('listar_chamados'))
 
-            # Atualizações a serem feitas
             updates = {}
 
             if novo_status and novo_status != chamado_existente.get('status'):
                 updates['status'] = novo_status
-                # Adiciona ao histórico de status
                 novo_historico = {
                     "status": novo_status,
                     "data": datetime.now(),
                     "por": quem_atualizou
                 }
-                # $push adiciona um elemento a um array
                 chamados_collection.update_one(
                     {"_id": ObjectId(chamado_id)},
                     {"$push": {"historico_status": novo_historico}}
@@ -149,28 +162,78 @@ def atualizar_chamado(chamado_id):
                     "data": datetime.now(),
                     "por": quem_atualizou
                 }
-                # $push adiciona um elemento a um array
                 chamados_collection.update_one(
                     {"_id": ObjectId(chamado_id)},
                     {"$push": {"comentarios": novo_comentario}}
                 )
 
-            # Aplica outras atualizações no documento principal (como o status)
             if updates:
                 chamados_collection.update_one(
                     {"_id": ObjectId(chamado_id)},
-                    {"$set": updates} # $set atualiza campos existentes ou adiciona novos
+                    {"$set": updates}
                 )
-
+            
+            flash('Chamado atualizado com sucesso!', 'success')
             return redirect(url_for('detalhes_chamado', chamado_id=chamado_id))
 
         except Exception as e:
-            print(f"Erro ao atualizar chamado: {e}")
-            return "Erro ao processar atualização", 500
-    return redirect(url_for('index')) # Se não for POST, redireciona para a home
+            flash(f"Erro ao processar atualização: {e}", 'error')
+            return redirect(url_for('detalhes_chamado', chamado_id=chamado_id))
+    return redirect(url_for('index'))
+
+# --- Novas Rotas de Autenticação ---
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index')) # Se já logado, vai para a home
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        user_data = users_collection.find_one({"username": username})
+
+        if user_data and check_password_hash(user_data['password'], password):
+            user = User(user_data)
+            login_user(user)
+            flash('Login realizado com sucesso!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Nome de usuário ou senha inválidos.', 'error')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required # Só pode fazer logout se estiver logado
+def logout():
+    logout_user()
+    flash('Você foi desconectado.', 'info')
+    return redirect(url_for('index'))
+
+# Rota para criar o primeiro usuário admin (REMOVER EM PRODUÇÃO!)
+# Esta rota deve ser usada APENAS UMA VEZ para criar o primeiro administrador
+# Depois de criar, você deve COMENTAR OU REMOVER esta rota por segurança.
+@app.route('/criar_admin')
+def criar_admin():
+    username = "admin"
+    password = "ouropreto" # Mude para uma senha forte!
+    hashed_password = generate_password_hash(password)
+
+    # Verifica se o usuário já existe
+    if users_collection.find_one({"username": username}):
+        flash(f'Usuário "{username}" já existe.', 'info')
+        return redirect(url_for('login'))
+
+    user_data = {
+        "username": username,
+        "password": hashed_password,
+        "role": "admin" # Define como admin
+    }
+    users_collection.insert_one(user_data)
+    flash(f'Usuário admin "{username}" criado com sucesso! Senha: {password}', 'success')
+    return redirect(url_for('login'))
 
 
 # Garante que o aplicativo só rode se este arquivo for executado diretamente
 if __name__ == '__main__':
-    #app.run(debug=True)
-    app.run()
+    app.run(debug=True)
