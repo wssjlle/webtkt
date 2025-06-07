@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Sistema de Manutenção</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .admin-panel-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .admin-panel-container h1 {
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+        .admin-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .admin-options a {
+            display: block;
+            background-color: #007bff;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            flex: 1 1 calc(50% - 40px); /* Dois por linha, com espaçamento */
+            max-width: 300px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .admin-options a:hover {
+            background-color: #0056b3;
+            transform: translateY(-3px);
+        }
+        .admin-options a:nth-child(2) { background-color: #28a745; } /* Cor diferente para Equipamentos */
+        .admin-options a:nth-child(2):hover { background-color: #218838; }
+        .admin-options a:nth-child(3) { background-color: #ffc107; color: #333;} /* Cor diferente para Usuários */
+        .admin-options a:nth-child(3):hover { background-color: #e0a800; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="{{ url_for('index') }}" class="logo">Manutenção Mineradora</a>
+        <nav>
+            {% if current_user.is_authenticated %}
+                <span>Olá, {{ current_user.user_data.username }}!</span>
+                <a href="{{ url_for('abrir_chamado') }}">Abrir Chamado</a>
+                <a href="{{ url_for('listar_chamados') }}">Ver Chamados</a>
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_panel') }}">Gerenciar (Admin)</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Sair</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Entrar</a>
+            {% endif %}
+        </nav>
+    </div>
+    <div class="admin-panel-container">
+        <h1>Painel Administrativo</h1>
+        {# Exibe mensagens flash #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="admin-options">
+            <a href="{{ url_for('gerenciar_setores') }}">Gerenciar Setores</a>
+            <a href="{{ url_for('gerenciar_equipamentos') }}">Gerenciar Equipamentos</a>
+            {# Futuramente: <a href="#">Gerenciar Usuários</a> #}
+        </div>
+        <a href="{{ url_for('index') }}" class="back-link">Voltar para a Página Inicial</a>
+    </div>
+</body>
+</html>
