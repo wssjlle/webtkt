@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abrir Novo Chamado - Sistema de Manutenção</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* CSS para estilizar o formulário */
+        .form-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; /* Garante que padding não aumente a largura total */
+        }
+        .form-group textarea {
+            resize: vertical; /* Permite redimensionar verticalmente */
+            min-height: 80px;
+        }
+        .form-group button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Abrir Novo Chamado de Manutenção</h1>
+        <form method="POST" action="{{ url_for('abrir_chamado') }}">
+            <div class="form-group">
+                <label for="titulo">Título do Chamado:</label>
+                <input type="text" id="titulo" name="titulo" required>
+            </div>
+            <div class="form-group">
+                <label for="descricao">Descrição Detalhada do Problema:</label>
+                <textarea id="descricao" name="descricao" rows="5" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="maquina">Máquina/Equipamento:</label>
+                <input type="text" id="maquina" name="maquina" required>
+            </div>
+            <div class="form-group">
+                <label for="localizacao">Localização na Planta:</label>
+                <input type="text" id="localizacao" name="localizacao" required>
+            </div>
+            <div class="form-group">
+                <label for="prioridade">Prioridade:</label>
+                <select id="prioridade" name="prioridade" required>
+                    <option value="Baixa">Baixa</option>
+                    <option value="Média" selected>Média</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="equipe_responsavel">Equipe Responsável:</label>
+                <select id="equipe_responsavel" name="equipe_responsavel" required>
+                    <option value="Mecânica">Mecânica</option>
+                    <option value="Elétrica">Elétrica</option>
+                    <option value="Hidráulica">Hidráulica</option>
+                    <option value="Pneus">Pneus</option>
+                    <option value="Geral">Geral</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="solicitante">Nome do Solicitante:</label>
+                <input type="text" id="solicitante" name="solicitante" required>
+            </div>
+            <div class="form-group">
+                <label for="contato_solicitante">Contato do Solicitante (Ramal/Telefone):</label>
+                <input type="text" id="contato_solicitante" name="contato_solicitante">
+            </div>
+            <div class="form-group">
+                <button type="submit">Abrir Chamado</button>
+            </div>
+        </form>
+        <a href="{{ url_for('index') }}" class="back-link">Voltar para a Página Inicial</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Manutenção</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Bem-vindo ao Sistema de Manutenção da Mineradora!</h1>
+        <p>Esta é a página inicial.</p>
+        <p><a href="{{ url_for('abrir_chamado') }}" class="button">Abrir Novo Chamado</a></p>
+        <p><a href="{{ url_for('listar_chamados') }}" class="button secondary-button">Ver Chamados Ativos</a></p>
+    </div>
+    <style>
+        /* Adicionar um estilo para o botão/link na página inicial */
+        .button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 10px; /* Margem para separar os botões */
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #218838;
+        }
+        .secondary-button {
+            background-color: #007bff; /* Cor diferente para o segundo botão */
+        }
+        .secondary-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</body>
+</html>

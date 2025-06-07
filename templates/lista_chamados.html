@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Chamados - Sistema de Manutenção</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Estilos adicionais para a lista de chamados */
+        .chamado-list-container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chamado-item {
+            border: 1px solid #eee;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chamado-item h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .chamado-item p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        .chamado-status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 3px;
+            color: white;
+            text-transform: uppercase;
+        }
+        .status-aberto { background-color: #dc3545; } /* Vermelho */
+        .status-em-andamento { background-color: #ffc107; color: #333; } /* Amarelo */
+        .status-finalizado { background-color: #28a745; } /* Verde */
+        .status-aguardando-peca { background-color: #007bff; } /* Azul */
+        .status-cancelado { background-color: #6c757d; } /* Cinza */
+
+        .no-chamados {
+            text-align: center;
+            color: #555;
+            padding: 30px;
+            font-style: italic;
+        }
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .chamado-details-link {
+            background-color: #17a2b8; /* Azul claro */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+        }
+        .chamado-details-link:hover {
+            background-color: #138496;
+        }
+    </style>
+</head>
+<body>
+    <div class="chamado-list-container">
+        <h1>Chamados de Manutenção Ativos</h1>
+
+        {% if chamados %}
+            {% for chamado in chamados %}
+                <div class="chamado-item">
+                    <div>
+                        <h3>{{ chamado.titulo }}</h3>
+                        <p><strong>Máquina:</strong> {{ chamado.maquina }}</p>
+                        <p><strong>Localização:</strong> {{ chamado.localizacao }}</p>
+                        <p><strong>Aberto por:</strong> {{ chamado.solicitante }} em {{ chamado.data_abertura.strftime('%d/%m/%Y %H:%M') }}</p>
+                    </div>
+                    <div>
+                        <span class="chamado-status status-{{ chamado.status.lower().replace(' ', '-') }}">
+                            {{ chamado.status }}
+                        </span>
+                        <a href="{{ url_for('detalhes_chamado', chamado_id=chamado._id) }}" class="chamado-details-link">Ver Detalhes</a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-chamados">Nenhum chamado aberto no momento.</p>
+        {% endif %}
+
+        <a href="{{ url_for('index') }}" class="back-link">Voltar para a Página Inicial</a>
+    </div>
+</body>
+</html>

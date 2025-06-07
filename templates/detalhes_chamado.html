@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Chamado - {{ chamado.titulo }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Estilos específicos para a página de detalhes */
+        .details-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 25px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .details-header h1 {
+            color: #0056b3;
+            margin: 0;
+            font-size: 1.8em;
+        }
+        .details-info p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .details-info p strong {
+            color: #555;
+            display: inline-block;
+            width: 120px; /* Para alinhar os valores */
+        }
+        .status-badge {
+            font-size: 1.1em;
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: white;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        /* Cores dos status (repetidas do lista_chamados, pode ir para style.css) */
+        .status-aberto { background-color: #dc3545; }
+        .status-em-andamento { background-color: #ffc107; color: #333; }
+        .status-finalizado { background-color: #28a745; }
+        .status-aguardando-peca { background-color: #007bff; }
+        .status-cancelado { background-color: #6c757d; }
+
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #0056b3;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .comment-item, .status-history-item {
+            background-color: #f0f8ff;
+            border-left: 4px solid #007bff;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .comment-item p, .status-history-item p {
+            margin: 0;
+        }
+        .comment-item .meta, .status-history-item .meta {
+            font-size: 0.8em;
+            color: #777;
+            margin-top: 5px;
+            display: block;
+        }
+        .status-history-item {
+            border-color: #28a745; /* Cor para histórico de status */
+        }
+
+        .update-form-group {
+            margin-bottom: 15px;
+        }
+        .update-form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .update-form-group select,
+        .update-form-group textarea,
+        .update-form-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .update-form-group button {
+            background-color: #6f42c1; /* Cor para o botão de atualização */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .update-form-group button:hover {
+            background-color: #5a359b;
+        }
+    </style>
+</head>
+<body>
+    <div class="details-container">
+        {% if chamado %}
+            <div class="details-header">
+                <h1>Chamado #{{ chamado._id }} - {{ chamado.titulo }}</h1>
+                <span class="status-badge status-{{ chamado.status.lower().replace(' ', '-') }}">
+                    {{ chamado.status }}
+                </span>
+            </div>
+
+            <div class="details-info">
+                <p><strong>Descrição:</strong> {{ chamado.descricao }}</p>
+                <p><strong>Máquina:</strong> {{ chamado.maquina }}</p>
+                <p><strong>Localização:</strong> {{ chamado.localizacao }}</p>
+                <p><strong>Prioridade:</strong> {{ chamado.prioridade }}</p>
+                <p><strong>Equipe Resp.:</strong> {{ chamado.equipe_responsavel }}</p>
+                <p><strong>Aberto por:</strong> {{ chamado.solicitante }} em {{ chamado.data_abertura.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p><strong>Contato Sol.:</strong> {{ chamado.contato_solicitante }}</p>
+            </div>
+
+            <h2 class="section-title">Atualizar Chamado</h2>
+            <form method="POST" action="{{ url_for('atualizar_chamado', chamado_id=chamado._id) }}">
+                <div class="update-form-group">
+                    <label for="novo_status">Novo Status:</label>
+                    <select id="novo_status" name="novo_status">
+                        <option value="">Não Alterar</option>
+                        <option value="Aberto" {% if chamado.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                        <option value="Em Andamento" {% if chamado.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                        <option value="Aguardando Peça" {% if chamado.status == 'Aguardando Peça' %}selected{% endif %}>Aguardando Peça</option>
+                        <option value="Finalizado" {% if chamado.status == 'Finalizado' %}selected{% endif %}>Finalizado</option>
+                        <option value="Cancelado" {% if chamado.status == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                    </select>
+                </div>
+                <div class="update-form-group">
+                    <label for="novo_comentario">Adicionar Comentário:</label>
+                    <textarea id="novo_comentario" name="novo_comentario" rows="3" placeholder="Insira seu comentário aqui..."></textarea>
+                </div>
+                 <div class="update-form-group">
+                    <label for="quem_atualizou">Seu Nome (para registro):</label>
+                    <input type="text" id="quem_atualizou" name="quem_atualizou" required>
+                </div>
+                <div class="update-form-group">
+                    <button type="submit">Atualizar Chamado</button>
+                </div>
+            </form>
+
+            <h2 class="section-title">Histórico de Status</h2>
+            {% if chamado.historico_status %}
+                {% for item in chamado.historico_status | reverse %} {# reverse para mostrar o mais recente primeiro #}
+                    <div class="status-history-item">
+                        <p>Status alterado para: <strong>{{ item.status }}</strong></p>
+                        <span class="meta">Por: {{ item.por }} em {{ item.data.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Nenhum histórico de status disponível.</p>
+            {% endif %}
+
+            <h2 class="section-title">Comentários</h2>
+            {% if chamado.comentarios %}
+                {% for comentario in chamado.comentarios | reverse %} {# reverse para mostrar o mais recente primeiro #}
+                    <div class="comment-item">
+                        <p>{{ comentario.texto }}</p>
+                        <span class="meta">Por: {{ comentario.por }} em {{ comentario.data.strftime('%d/%m/%Y %H:%M') }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>Nenhum comentário adicionado ainda.</p>
+            {% endif %}
+
+        {% else %}
+            <p>Chamado não encontrado.</p>
+        {% endif %}
+
+        <a href="{{ url_for('listar_chamados') }}" class="back-link">Voltar para a Lista de Chamados</a>
+    </div>
+</body>
+</html>
